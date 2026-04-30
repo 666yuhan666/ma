@@ -560,12 +560,33 @@ export class _Tokenizer<ParserOutput = string, RendererOutput = string> {
       });
     }
 
+    // Check for unclosed backticks in each row
     for (const row of rows) {
       const cells = splitCells(row);
       if (cells.length > headers.length) {
         // row columns cannot exceed header columns
         return;
       }
+      
+      // Check for unclosed backticks in each cell
+      for (const cell of cells) {
+        let backtickCount = 0;
+        let escaped = false;
+        for (const char of cell) {
+          if (escaped) {
+            escaped = false;
+          } else if (char === '\\') {
+            escaped = true;
+          } else if (char === '`') {
+            backtickCount++;
+          }
+        }
+        // If odd number of backticks, table is invalid
+        if (backtickCount % 2 !== 0) {
+          return;
+        }
+      }
+      
       item.rows.push(splitCells(row, item.header.length).map((cell, i) => {
         return {
           text: cell,
